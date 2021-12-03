@@ -27,10 +27,89 @@ fn main()
         "2" => {
             challenge_day_two()
         }
+        "3" => {
+            challenge_day_three()
+        }
         _ => {
             println!("Pick a real number next time.");
         }
     }
+}
+
+fn challenge_day_three()
+{
+    let mut reader = get_reader();
+
+    day_3_part_one(&mut reader);
+}
+
+fn day_3_part_one(reader: &mut BufReader<File> )
+{
+    let mut row_count = 0;
+    let mut frequency = [0;12];
+    let mut index = 0;
+    let mut gamma:i32 = 0;
+    let mut epsilon:i32 = 0;
+
+    loop
+    {
+        let mut raw_line = read_line_from_file(reader);
+        if raw_line.is_err()
+        {
+            println!("Problem reading line from reader.");
+            return;
+        }
+        let binary = raw_line.unwrap();
+        // Go until we get no result back.
+        if binary == ""
+        {
+            break;
+        }
+
+        for char in binary.chars()
+        {
+            if char == '1'
+            {
+                frequency[index] += 1;
+            }
+            index = (index + 1) % 12;
+        }
+        row_count += 1;
+    }
+
+    // Analysis
+    println!("Total rows: {}", row_count);
+    print!("Frequency count: ");
+    index = 0;
+    loop
+    {
+        print!("{},", frequency[index]);
+        gamma <<= 1;
+        epsilon <<= 1;
+        if frequency[index] > (row_count - frequency[index])
+        {
+            gamma += 1;
+        }
+        else if frequency[index] < (row_count - frequency[index])
+        {
+            epsilon += 1;
+        }
+        else
+        {
+            println!("There's an equality case here.  You were wrong, it _can_ happen.");
+        }
+        index += 1;
+        if index >= 12
+        {
+            break;
+        }
+    }
+    print!("\n");
+    print!("\n");
+
+    println!("Gamma: {}", gamma);
+    println!("Epsion: {}", epsilon);
+    println!("Gamma x Epsilon: {}", gamma * epsilon);
 }
 
 fn challenge_day_two()
@@ -40,7 +119,7 @@ fn challenge_day_two()
     
     let rewind_result = reader.seek(SeekFrom::Start(0));
     
-    if (rewind_result.is_err())
+    if rewind_result.is_err()
     {
         println!("Attempted to rewind to re-read file, but something blew up.  Reloading file.");
         reader = get_reader();
