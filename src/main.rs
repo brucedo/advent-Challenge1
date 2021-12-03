@@ -1,5 +1,5 @@
-use std::{io::{stdin, BufRead, BufReader, Seek, SeekFrom, Write}, path::Path, fs::File, process::exit,};
-use std::io::stdout;
+use std::{io::{stdin, BufRead, BufReader, Seek, SeekFrom, Write}, path::Path, fs::File, };
+
 
 fn main() 
 {
@@ -39,48 +39,214 @@ fn main()
 fn challenge_day_three()
 {
     let mut reader = get_reader();
+    let mut row_count = 0;
 
-    day_3_part_one(&mut reader);
+    // The frequency count is used by both problems.  Get it here.
+    let mut frequency = [0;12];
+    loop 
+    {
+        let line_result = read_line_from_file(&mut reader);
+        match line_result {
+            Ok(result) => {
+                if result == ""
+                {
+                    break;
+                }
+                row_count += 1;
+                frequency_calculator(result, &mut frequency)
+            },
+            Err(e) => {
+                println!("An error occurred reading a line from the file.  Dumping.\n{}",e);
+                return;
+            }
+        }
+    }
+
+    // rewind for task one
+    let mut seek = reader.seek(SeekFrom::Start(0));
+    if seek.is_err()
+    {
+        println!("Problem seeking to the start of the file stream.  Reopening file:");
+        reader = get_reader();
+    }
+
+    day_3_part_one(&mut reader, &frequency, row_count);
+
+    // rewind for task two
+    seek = reader.seek(SeekFrom::Start(0));
+    if seek.is_err()
+    {
+        println!("Problem seeking to the start of the file stream.  Reopening file:");
+        reader = get_reader();
+    }
+
+    day_3_part_two(&mut reader, &frequency, &row_count);
 }
 
-fn day_3_part_one(reader: &mut BufReader<File> )
+fn bitstring_to_u16(bit_string: String) -> Result<u16, String>
 {
-    let mut row_count = 0;
-    let mut frequency = [0;12];
-    let mut index = 0;
-    let mut gamma:i32 = 0;
-    let mut epsilon:i32 = 0;
+    let mut value:u16 = 0;
 
-    loop
+    if bit_string.len() > 16
     {
-        let mut raw_line = read_line_from_file(reader);
-        if raw_line.is_err()
+        return Err("This bit string will not fit in an i16.".to_string());
+    }
+
+    for char in bit_string.chars()
+    {
+        value <<= 1;
+        if char == '1'
         {
-            println!("Problem reading line from reader.");
-            return;
+            value += 1;
         }
-        let binary = raw_line.unwrap();
-        // Go until we get no result back.
-        if binary == ""
+    }
+
+    return Ok(value);
+}
+
+fn day_3_part_two(reader: &mut BufReader<File>, frequency: &[i32], total: &i32)
+{
+    // let binary_string: String;
+    // let mut most_common:[char; 12] = ['\x00';12];
+    let mut most_common:u16 = 0;
+    // let mut least_common:[char; 12] = ['\x00';12];
+    let mut least_common:u16 = 0;
+
+    // this problem is annoying.
+    let mut o2:Vec<u16> = Vec::new();
+    let mut co2:Vec<u16> = Vec::new();
+
+    let mut index = 0;
+    while index < frequency.len()
+    {
+        most_common <<= 1;
+        least_common <<= 1;
+        if frequency[index] > (total - frequency[index])
+        {
+            most_common += 1;
+            // most_common[index] = '1';
+            // least_common[index] = '0';
+        }
+        else if frequency[index] < (total - frequency[index])
+        {
+            least_common += 1;
+            // most_common[index] = '0';
+            // least_common[index] = '1';
+        }
+        index += 1;
+    }
+
+    println!("Most common pattern: {:b}", most_common);
+    println!("Least common pattern: {:b}", least_common);
+
+    // Preload the o2 and co2 vectors with bit strings that match the conditions
+    // char[0] == most_common and char[0] == least_common respectively.
+    let mut comparable_bit = 0x0800;
+    loop 
+    {
+        let result = read_line_from_file(reader);
+        match result
+        {
+            Ok(bit_string) =>
+            {
+                if bit_string == ""
+                {
+                    break;
+                }
+                let reading = bitstring_to_u16(bit_string).unwrap();
+                if (reading & comparable_bit) == (most_common & comparable_bit)
+                {
+                    o2.push(reading);
+                }
+                else if (reading & comparable_bit) == (least_common & comparable_bit)
+                {
+                    co2.push(reading);
+                }
+            }
+            Err(e) =>{
+                println!("An error occurred reading the next line from the string.");
+                return;
+            }
+        }
+    }
+
+    // We've already sorted the values into o2 and co2 according to the MSB.  Start with
+    // second msb.
+    
+    loop 
+    {
+        comparable_bit >>= 1;
+        
+        if comparable_bit == 0
         {
             break;
         }
 
-        for char in binary.chars()
+        let mut o2_index = 0;
+        let mut co2_index = 0;
+
+        while o2_index < o2.len()
         {
-            if char == '1'
+            if (o2[o2_index] & comparable_bit) != (most_common & comparable_bit)
             {
-                frequency[index] += 1;
+                o2.remove(o2_index);
             }
-            index = (index + 1) % 12;
+            else
+            {
+                o2_index += 1;
+            }
+
         }
-        row_count += 1;
+
+        while co2_index < co2.len()
+        {
+            if (co2[co2_index] & comparable_bit) != (least_common & comparable_bit)
+            {
+                co2.remove(co2_index);
+            }
+            else 
+            {
+                co2_index += 1;
+            }
+        }
+
+        if o2.len() == 1
+        {
+            o2_index = 2;
+        }
+        else
+        {
+            o2_index = 0;
+        }
+
+        if co2.len() == 1
+        {
+            co2_index = 2;
+        }
+        else
+        {
+            co2_index = 0;
+        }
     }
 
+    println!("Well this was bonkers.");
+    println!("O2 value: {}, {:b} in binary.", o2[0], o2[0]);
+    println!("CO2 value: {}, {:b} in binary.", co2[0], co2[0]);
+    println!("O2 x CO2: {}", o2[0] * co2[0]);
+
+}
+
+fn day_3_part_one(reader: &mut BufReader<File>, frequency: &[i32], row_count: i32)
+{
+    
+    let mut gamma:i32 = 0;
+    let mut index = 0;
+    let mut epsilon:i32 = 0;
+
+    
     // Analysis
     println!("Total rows: {}", row_count);
     print!("Frequency count: ");
-    index = 0;
     loop
     {
         print!("{},", frequency[index]);
@@ -110,6 +276,21 @@ fn day_3_part_one(reader: &mut BufReader<File> )
     println!("Gamma: {}", gamma);
     println!("Epsion: {}", epsilon);
     println!("Gamma x Epsilon: {}", gamma * epsilon);
+}
+
+fn frequency_calculator(binary: String, counter: &mut [i32])
+{
+    let mut index = 0;
+
+        for char in binary.chars()
+        {
+            if char == '1'
+            {
+                counter[index] += 1;
+            }
+            index = (index + 1) % 12;
+        }
+
 }
 
 fn challenge_day_two()
@@ -296,7 +477,7 @@ fn count_rolling_increases(reader: &mut BufReader<File>) -> Result<i32, String>
 {
     // initialize our window
     let mut sum_window: [i32; 3] = [0, 0, 0];
-    let mut first = -1;
+    let mut first:i32;
     let mut second = -1;
     let mut k = 0;
 
