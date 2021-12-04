@@ -5,7 +5,7 @@ fn main()
 {
     let mut choice = String::new();
 
-    print!("Which day's challenge to run (1-2): ");
+    print!("Which day's challenge to run (1-3): ");
     std::io::stdout().flush().unwrap();
     stdin().read_line(&mut choice).expect("Apparently you are bad at typing?  Somehow?");    
 
@@ -53,7 +53,7 @@ fn challenge_day_three()
                     break;
                 }
                 row_count += 1;
-                frequency_calculator(result, &mut frequency)
+                frequency_calculator_bitstring(result, &mut frequency)
             },
             Err(e) => {
                 println!("An error occurred reading a line from the file.  Dumping.\n{}",e);
@@ -80,7 +80,7 @@ fn challenge_day_three()
         reader = get_reader();
     }
 
-    day_3_part_two(&mut reader, &frequency, &row_count);
+    day_3_part_two(&mut reader);
 }
 
 fn bitstring_to_u16(bit_string: String) -> Result<u16, String>
@@ -104,135 +104,146 @@ fn bitstring_to_u16(bit_string: String) -> Result<u16, String>
     return Ok(value);
 }
 
-fn day_3_part_two(reader: &mut BufReader<File>, frequency: &[i32], total: &i32)
+fn calc_most_common_bit(list: &Vec<u16>, bit_position: u16) -> u16
 {
-    // let binary_string: String;
-    // let mut most_common:[char; 12] = ['\x00';12];
-    let mut most_common:u16 = 0;
-    // let mut least_common:[char; 12] = ['\x00';12];
-    let mut least_common:u16 = 0;
+    let mut zero_count: u16 = 0;
+    let mut one_count: u16 = 0;
 
-    // this problem is annoying.
-    let mut o2:Vec<u16> = Vec::new();
-    let mut co2:Vec<u16> = Vec::new();
-
-    let mut index = 0;
-    while index < frequency.len()
+    for value in list
     {
-        most_common <<= 1;
-        least_common <<= 1;
-        if frequency[index] > (total - frequency[index])
+        if (value & bit_position) > 0
         {
-            most_common += 1;
-            // most_common[index] = '1';
-            // least_common[index] = '0';
+            one_count += 1;
         }
-        else if frequency[index] < (total - frequency[index])
+        else 
         {
-            least_common += 1;
-            // most_common[index] = '0';
-            // least_common[index] = '1';
-        }
-        index += 1;
-    }
-
-    println!("Most common pattern: {:b}", most_common);
-    println!("Least common pattern: {:b}", least_common);
-
-    // Preload the o2 and co2 vectors with bit strings that match the conditions
-    // char[0] == most_common and char[0] == least_common respectively.
-    let mut comparable_bit = 0x0800;
-    loop 
-    {
-        let result = read_line_from_file(reader);
-        match result
-        {
-            Ok(bit_string) =>
-            {
-                if bit_string == ""
-                {
-                    break;
-                }
-                let reading = bitstring_to_u16(bit_string).unwrap();
-                if (reading & comparable_bit) == (most_common & comparable_bit)
-                {
-                    o2.push(reading);
-                }
-                else if (reading & comparable_bit) == (least_common & comparable_bit)
-                {
-                    co2.push(reading);
-                }
-            }
-            Err(e) =>{
-                println!("An error occurred reading the next line from the string.");
-                return;
-            }
+            zero_count += 1;
         }
     }
 
-    // We've already sorted the values into o2 and co2 according to the MSB.  Start with
-    // second msb.
+    if zero_count > one_count
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+fn calc_least_common_bit(list: &Vec<u16>, bit_position: u16) -> u16
+{
+    let mut zero_count: u16 = 0;
+    let mut one_count: u16 = 0;
+
+    for value in list
+    {
+        if (value & bit_position) > 0
+        {
+            one_count += 1;
+        }
+        else 
+        {
+            zero_count += 1;
+        }
+    }
+
+    if zero_count <= one_count
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+fn day_3_part_two(reader: &mut BufReader<File>) -> Result<String, String>
+{
     
+    let mut o2_candidates: Vec<u16> = Vec::new();
+    let mut co2_candidates: Vec<u16> = Vec::new();
+    let mut curr_bit_pos:u16 = 0x0800;
+
+    // Load'em up.
     loop 
     {
-        comparable_bit >>= 1;
-        
-        if comparable_bit == 0
+        let bit_string = read_line_from_file(reader)?;
+        if bit_string == ""
+        {
+            break;
+        }
+        let diagnostic_value = bitstring_to_u16(bit_string)?;
+        o2_candidates.push(diagnostic_value);
+        co2_candidates.push(diagnostic_value);
+    }
+
+    // clean 02 candidates first
+    loop 
+    {
+        if o2_candidates.len() == 1
         {
             break;
         }
 
-        let mut o2_index = 0;
-        let mut co2_index = 0;
+        let most_common = calc_most_common_bit(&o2_candidates, curr_bit_pos);
 
-        while o2_index < o2.len()
+        let mut o2_index = 0;
+        while o2_index < o2_candidates.len()
         {
-            if (o2[o2_index] & comparable_bit) != (most_common & comparable_bit)
+            let masked_candidate = o2_candidates[o2_index] & curr_bit_pos; // e.g. 010110101001 & 000000001000 = 000000001000; 010110100001 & 000000001000 = 000000000000
+
+            if ((most_common == 1) && (masked_candidate == 0)) || ((most_common == 0) && (masked_candidate > 0))
             {
-                o2.remove(o2_index);
+                o2_candidates.remove(o2_index);
             }
             else
             {
                 o2_index += 1;
             }
+        }
+        curr_bit_pos >>= 1;
+    }
 
+    let o2 = o2_candidates[0];
+
+    // reset, then the co2 candidates
+    curr_bit_pos = 0x0800;
+    loop
+    {
+        if co2_candidates.len() == 1
+        {
+            break;
         }
 
-        while co2_index < co2.len()
+        let least_common = calc_least_common_bit(&co2_candidates, curr_bit_pos);
+
+        let mut co2_index = 0;
+        while co2_index < co2_candidates.len()
         {
-            if (co2[co2_index] & comparable_bit) != (least_common & comparable_bit)
+            
+            let masked_candidate = co2_candidates[co2_index] & curr_bit_pos;
+
+            if ((least_common == 1) && (masked_candidate == 0)) || ((least_common == 0) && (masked_candidate > 0))
             {
-                co2.remove(co2_index);
+                co2_candidates.remove(co2_index);
             }
-            else 
+            else
             {
                 co2_index += 1;
             }
         }
-
-        if o2.len() == 1
-        {
-            o2_index = 2;
-        }
-        else
-        {
-            o2_index = 0;
-        }
-
-        if co2.len() == 1
-        {
-            co2_index = 2;
-        }
-        else
-        {
-            co2_index = 0;
-        }
+        curr_bit_pos >>= 1;
     }
 
-    println!("Well this was bonkers.");
-    println!("O2 value: {}, {:b} in binary.", o2[0], o2[0]);
-    println!("CO2 value: {}, {:b} in binary.", co2[0], co2[0]);
-    println!("O2 x CO2: {}", o2[0] * co2[0]);
+    let co2 = co2_candidates[0];
+
+
+    println!("O2 value: {}, {:b} in binary.", o2, o2);
+    println!("CO2 value: {}, {:b} in binary.", co2, co2);
+    println!("O2 x CO2: {}", i32::from(o2) * i32::from(co2));
+
+    return Ok("".to_string());
 
 }
 
@@ -278,7 +289,7 @@ fn day_3_part_one(reader: &mut BufReader<File>, frequency: &[i32], row_count: i3
     println!("Gamma x Epsilon: {}", gamma * epsilon);
 }
 
-fn frequency_calculator(binary: String, counter: &mut [i32])
+fn frequency_calculator_bitstring(binary: String, counter: &mut [i32])
 {
     let mut index = 0;
 
@@ -611,7 +622,8 @@ fn get_reader() -> BufReader<File>
 {
     let mut filename = String::new();
 
-    println!("Path to input file: ");
+    print!("Path to input file: ");
+    std::io::stdout().flush().unwrap();
     stdin().read_line(&mut filename).expect("Apparently you are bad at typing?  Somehow?");
     if filename.ends_with("\n")
     {
@@ -633,8 +645,8 @@ fn get_reader() -> BufReader<File>
         println!("The path provided does not point to a valid readable file.  Error: {}", error.to_string());
         
         // println!("Results from opening file {}", String::from(path.to_str().unwrap()));
-        println!("Path to input file: ");
-
+        print!("Path to input file: ");
+        std::io::stdout().flush().unwrap();
         stdin().read_line(&mut filename).expect("Apparently you are bad at typing?  Somehow?");
 
         let path = Path::new(&mut filename);
