@@ -1,3 +1,5 @@
+use std::io::{Write};
+
 pub struct Board 
 {
     pub rows: [[i32;5]; 5],
@@ -31,8 +33,6 @@ impl Board
         let mut col = 0;
         let mut total = 0;
 
-        println!("Called numbers for this board: {:?}", self.called);
-
         while row < 5
         {
             while col < 5
@@ -45,7 +45,9 @@ impl Board
                 col += 1
             }
             print!("\n");
+            std::io::stdout().flush().unwrap();
             row += 1;
+            col = 0;
         }
 
         return total;
@@ -58,13 +60,12 @@ impl Board
         {
             Ok((row_pos, col_pos)) =>
             {
-                println!("Called value is at position row {}, column {}.", row_pos, col_pos);
                 // If the board contains the number, push it onto our list of called numbers.
                 self.called.push(value);
                 // Check if this new number causes a row or column win.
                 return self.row_or_col_win(row_pos, col_pos);
             },
-            Err(err) => 
+            Err(_err) => 
             {
                 return false;
             }
@@ -88,6 +89,7 @@ impl Board
                 col_index += 1;
             }
             row_index += 1;
+            col_index = 0;
         }
 
         return Err("Not found.".to_string());
@@ -99,23 +101,18 @@ impl Board
         let mut column_win = true;
         let mut row_win:bool;
         let mut col_index = 0;
-        println!("Testing columns of row {}", row);
-        println!("Contents of called set: {:?}", self.called);
+
         while col_index < 5
         {
-            println!("What's at {}, {}? {}", row, col_index, &self.rows[row][col_index]);
             column_win &= self.called.contains(&self.rows[row][col_index]);
-            println!("Column position {} in the called set? {}", col_index, column_win);
             col_index += 1;
         }
 
         row_win = true;
         let mut row_index = 0;
-        println!("Now testing rows of column {}", column);
         while row_index < 5
         {
             row_win &= self.called.contains(&self.rows[row_index][column]);
-            println!("Row position {} in the called set? {}", row_index, row_win);
             row_index += 1;
         }
 
@@ -170,4 +167,10 @@ impl Board
 
         return win;
     }
+}
+
+#[cfg(test)]
+pub mod tests
+{
+
 }

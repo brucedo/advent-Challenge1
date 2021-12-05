@@ -2,7 +2,7 @@ pub mod bingo;
 
 use std::{io::{stdin, BufRead, BufReader, Seek, SeekFrom, Write}, path::Path, fs::File, };
 
-use bingo::{board::Board, bingo::Bingo};
+use bingo::bingo::Bingo;
 
 fn main() 
 {
@@ -82,8 +82,6 @@ fn day_4_part_one(reader: &mut BufReader<File>)
             }
         }
 
-        println!("Handling this string: '{}'", board_line);
-
         if board_line == ""
         {
             board_finished = true;
@@ -120,6 +118,9 @@ fn day_4_part_one(reader: &mut BufReader<File>)
             col = 0;
         }
     }
+
+    println!("Finished loading game boards.");
+    println!("{}", game);
     
     // boards loaded.  Start simulating the game.
     for num in call_string.split(",")
@@ -128,12 +129,7 @@ fn day_4_part_one(reader: &mut BufReader<File>)
         let result = num.parse::<i32>();
         match result {
             Ok(value) => {
-                let won = game.call(value);
-                if won
-                {
-                    println!("Winning score: {}", game.winning_score);
-                    break;
-                }
+                game.call(value);
             },
             Err(e) =>
             {
@@ -141,6 +137,7 @@ fn day_4_part_one(reader: &mut BufReader<File>)
             }
         }
     }
+    println!("First game won  with score {:?}",  game.won_scores);
 }
 
 fn challenge_day_three()
