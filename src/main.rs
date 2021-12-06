@@ -1,14 +1,21 @@
 pub mod bingo;
+pub mod lines;
 
-use std::{io::{stdin, BufRead, BufReader, Seek, SeekFrom, Write}, path::Path, fs::File, };
+use std::{io::{stdin, BufRead, BufReader, Seek, SeekFrom, Write}, path::Path, fs::File, cmp::max, convert::TryInto, };
 
 use bingo::bingo::Bingo;
+use lines::line::Line;
+use log::{debug, error};
+
+use crate::lines::grid::Grid;
 
 fn main() 
 {
+    env_logger::init();
+
     let mut choice = String::new();
 
-    print!("Which day's challenge to run (1-4): ");
+    print!("Which day's challenge to run (1-6): ");
     std::io::stdout().flush().unwrap();
     stdin().read_line(&mut choice).expect("Apparently you are bad at typing?  Somehow?");    
 
@@ -37,10 +44,195 @@ fn main()
         {
             challenge_day_four()
         }
+        "5" =>
+        {
+            challenge_day_five()
+        }
+        "6" =>
+        {
+            challenge_day_six()
+        }
         _ => {
             println!("Pick a real number next time.");
         }
     }
+}
+
+fn challenge_day_six()
+{
+    let mut reader = get_reader();
+
+    day6_part_one(&mut reader);
+}
+
+fn day6_part_one(reader: &mut BufReader<File>)
+{
+    let mut buffer = String::new();
+    let response = read_trimmed_line(reader, &mut buffer);
+
+    let mut fishes: [u64; 9] = [0; 9];
+
+
+
+    match response 
+    {
+        Ok(_size) =>
+        {
+            // This one's input has only one line - no need to loop input in or check to see when we hit EOF.
+            for fish_count in buffer.split(',')
+            {
+                // we know from inspection that the input is always between 0 and 7.  No, I would not normally just do this.
+                fishes[fish_count.parse::<usize>().unwrap()] += 1;
+            }
+        }
+        Err(e) =>
+        {
+            error!("An error occurred reading the file: {}", e);
+            return
+        }
+    }
+
+    // okay, fishes should be loaded.  loop 80 times and on each iteration: if some fish entries value is 0,
+    // add 6 and push a new value of 8 onto the end.  Of course we don't want to trigger any of the newly added
+    // fish, so be sure that we only iterate across indices 0 .. vec.len() at the start of the day.
+    
+    for _j in 0..256
+    {
+        debug!("today (day {}) there are {:?} fish.", _j, fishes);
+        let temp = fishes[0];
+        for i in 1..9
+        {
+            debug!("i: {}, fishes[i-1]: {}, fishes[i]: {}", i, fishes[i-1], fishes[i]);
+            fishes[i-1] = fishes[i];
+        }
+        // empty the 8th bucket
+        fishes[8] = 0;
+
+        // now update the 8th and 6th buckets.
+        fishes[6] += temp;
+        fishes[8] += temp;
+    }
+
+    let mut total = 0;
+    for _i in 0..9
+    {
+        total += fishes[_i];
+    }
+    println!("There are a total of {} fish.", total);
+
+    
+}
+
+fn challenge_day_five()
+{
+    let mut reader = get_reader();
+
+    day5_part_one(&mut reader);
+}
+
+fn day5_part_one(reader: &mut BufReader<File>)
+{
+    let mut buffer = String::new();
+    let mut x_max = 0;
+    let mut y_max = 0;
+    let mut lines:Vec<Line> = Vec::new();
+
+    loop
+    {
+        // clean the string buffer out
+        buffer.clear();
+        let read_result = read_trimmed_line(reader, &mut buffer);
+        match read_result
+        {
+            Ok(size) =>
+            {
+                // 0 size - EOF
+                if size == 0
+                {
+                    break;
+                }
+                else
+                {
+                    // Read the line from number, number -> number, number into a Line
+                    let line = convert_to_line(&buffer);
+                    debug!("Read line {}, {} -> {}, {}", line.x1, line.y1, line.x2, line.y2);
+                    // if !(line.is_horizontal() || line.is_vertical())
+                    // {
+                    //     debug!("Skipping line {}, {} -> {}, {} for being crooked", line.x1, line.y1, line.x2, line.y2);
+                    //     continue;
+                    // }
+                    x_max = max(x_max, max(line.x1, line.x2));
+                    y_max = max(y_max, max(line.y1, line.y2));
+                    lines.push(line);
+                }
+            },
+            Err(e ) =>
+            {
+                error!("An error occurred during the read in of a line of the file: {}", e);
+                return;
+            }
+        }
+        
+    }
+
+    debug!("Max x and max y: {}, {}", x_max, y_max);
+
+    // Lines read in - generate grid and then insert.
+    let mut grid = Grid::new();
+    grid.init((x_max + 1).try_into().unwrap(), (y_max + 1).try_into().unwrap());
+
+    for line in lines
+    {
+        if !(line.is_horizontal() || line.is_vertical())
+        {
+            grid.insert_diagonal_line(&line)
+        }
+        else
+        {
+            grid.insert_flat_line(&line);
+        }
+    }
+
+    // Now get intersection coverage
+    let mut coverage = 0;
+    for i in 0..(x_max + 1)
+    {
+        for j in 0..(y_max + 1)
+        {
+            if grid.get_value_at(i.try_into().unwrap(), j.try_into().unwrap()) > 1
+            {
+                coverage += 1
+            }
+        }
+    }
+
+    println!("The intersection coverage is {} squares.", coverage);
+}
+
+fn convert_to_line(input: &String) -> Line
+{
+    let mut line = Line::new();
+    let mut index = 0;
+    let mut temp:[i16; 4] = [0;4];
+
+    debug!("Converting string '{}'", input);
+
+    // Every string is of the general form 'number,number -> number,number.  We can get the number pairs with a spliterator
+    for pair in input.split(" -> ")
+    {
+        for coord in pair.split(",")
+        {
+            temp[index] = coord.parse::<i16>().unwrap();
+            index += 1;
+        }
+    }
+
+    line.x1 = temp[0];
+    line.y1 = temp[1];
+    line.x2 = temp[2];
+    line.y2 = temp[3];
+
+    return line;
 }
 
 fn challenge_day_four()
