@@ -2,13 +2,14 @@ pub mod bingo;
 pub mod lines;
 pub mod common;
 pub mod day;
+pub mod digit;
 
 use std::io::{Write, stdin};
 
 use day::{day2::challenge_day_two, day1::challenge_day_one, day3::challenge_day_three,
     day4::challenge_day_four,day5::challenge_day_five, day6::challenge_day_six};
 
-use crate::{lines::grid::Grid, day::day7::challenge_day_7, };
+use crate::{lines::grid::Grid, day::{day7::challenge_day_7, day8::challenge_day_8}, };
 
 fn main() 
 {
@@ -16,7 +17,7 @@ fn main()
 
     let mut choice = String::new();
 
-    print!("Which day's challenge to run (1-7): ");
+    print!("Which day's challenge to run (1-8): ");
     std::io::stdout().flush().unwrap();
     stdin().read_line(&mut choice).expect("Apparently you are bad at typing?  Somehow?");    
 
@@ -56,6 +57,10 @@ fn main()
         "7" =>
         {
             challenge_day_7();
+        }
+        "8" =>
+        {
+            challenge_day_8();
         }
         _ => {
             println!("Pick a real number next time.");
