@@ -4,7 +4,8 @@ pub struct Digit
 {
     pub segments: [i8;7],
     pub possible_digits: Vec<i8>,
-    pub num_set_segments: i8
+    pub num_set_segments: i8,
+    pub position: usize
 }
 
 
@@ -12,7 +13,7 @@ impl Digit
 {
     pub fn new() -> Digit
     {
-        Digit { segments: [0;7], possible_digits: Vec::<i8>::new(), num_set_segments: 0 }
+        Digit { segments: [0;7], possible_digits: Vec::<i8>::new(), num_set_segments: 0, position: std::usize::MAX }
     }
 
     pub fn set_segment(&mut self, segment: char)

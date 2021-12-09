@@ -1,4 +1,4 @@
-use std::{io::BufReader, fs::File,};
+use std::{io::BufReader, fs::File, ops::Index,};
 
 use log::{debug, error};
 
@@ -66,6 +66,23 @@ fn part_one(reader: &mut BufReader<File>)
     }
 
     println!("Total number of 1, 4, 7 and 8: {}", total_easy);
+
+    // part 2 - analyze all digits
+    let mut total:i64 = 0;
+    for display in &mut digits
+    {
+        let complete = segment_analysis(display);
+        let mut subtotal:i64 = 0;
+        for i in 10..14
+        {
+            subtotal *= 10;
+            subtotal += (complete[i].possible_digits[0]) as i64;
+            println!("Total is now: {}", subtotal);
+        }
+        total += subtotal;
+    }
+
+    println!("Final total of all supposed end-of-line values: {}", total);
 }
 
 
@@ -90,8 +107,14 @@ fn analyze_digits(display: &mut Vec<Digit>)
     // Size analysis done.  This is enough to answer part one, or should be.
 }
 
-fn segment_analysis(display: &mut Vec<Digit>)
+fn segment_analysis(display: &mut Vec<Digit>) -> Vec<Digit>
 {
+    // A tediously-by-hand-pre-calculated matrix of common elements between digits.
+    // The number at the intersection of any (digit1, digit2) pair is number of segments
+    // that the two digits have in common when lit up.  Example: the digit 4 has 3 segments
+    // in common with the digit 0 (b,c,f) - and so the intersection of 4,0 is 3.
+    // Note that 0,4 is also 3 - the matrix is symmetrical, as the digit 0 also has 3 segments
+    // in common with the digit 4.
     let precalc: [[i8; 10]; 10] = [
         [6, 2, 4, 4, 3, 4, 5, 3, 6, 5],
         [2, 2, 1, 2, 2, 1, 1, 2, 2, 2],
@@ -104,37 +127,100 @@ fn segment_analysis(display: &mut Vec<Digit>)
         [6, 2, 5, 5, 4, 5, 6, 3, 7, 6],
         [5, 2, 4, 5, 4, 5, 5, 3, 6, 6]
     ];
-    let mut unknown = Vec::<&mut Digit>::new();
-    let mut known = Vec::<&mut Digit>::new();
 
-    // move all of the known digits into the known list to start.
-    for digit in display
+    // pain in the fucking ass borrow system and loops.  Just tear display apart and be done with it.
+    let mut unknown = Vec::<Digit>::new();
+    let mut known = Vec::<Digit>::new();
+
+    // Dismantle display.  Put its elements into known and unknown.
+    while !display.is_empty()
     {
-        if digit.possible_digits.len() == 1
+        let temp = display.pop().unwrap();
+        debug!("Consuming entry from position {}", temp.position);
+        if temp.possible_digits.len() == 1
         {
-            known.push(digit);
+            known.push(temp);
         }
         else
         {
-            unknown.push(digit);
+            unknown.push(temp);
         }
     }
 
-    // Now - start doing comparisons against known values.
-    let unknown_counter = 0;
-    while unknown.len() > 0
-    {
-        let digit = unknown[i];
-        // compare against all of the knowns;
+    drop(display);
 
+    // Now, iterate across all of the unknowns.  Check each Digit at display[unknown]
+    // against all of the known indices.  Compare the common segment counts against the table
+    // above.
+    let last_pass = unknown.len();
+    let curr_pass = std::usize::MAX;
+    while !unknown.is_empty()
+    {
+        // if last_pass == curr_pass
+        // {
+        //     panic!("Last pass and curr_pass have not changed.  Probable infinite loop.");
+        // }
+        let mut digit1 = unknown.pop().unwrap();
+
+        debug!("Unknown has {} entries left.", unknown.len());
+        debug!("Digit1 count of possibles: {}", digit1.possible_digits.len());
+        debug!{"Digit1 set of possibles: {:?}", digit1.possible_digits};
+        debug!("Digit1 set segments: {:?}", digit1.segments);
+
+        for digit2 in &known
+        {
+            
+            let common_count = common_segment(&digit1, digit2);
+            debug!("Common segment count between digit1 and digit2: {}", common_count);
+            debug!("digit2 count of possibles: {}", digit2.possible_digits.len());
+            debug!("digit2 set of possibles: {:?}", digit2.possible_digits);
+            debug!("digit2 set segments: {:?}", digit2.segments);
+            // Digit2 should have exactly 1 possible digit, otherwise it should not be in known
+            let row = digit2.possible_digits[0];
+            debug!("Row in precalc: {}", row);
+            let mut i = 0;
+
+            while i < digit1.possible_digits.len()
+            {
+                debug!("comparing segment count to digit1.possible[i] to digit2.possible[0]");
+                // if the common element count of row, col equals the common_count value - then this digit remains
+                // a possibility.  If they do not equal then the possible digit, known digit pair do not have the 
+                // same set of common segments that the unknown digit, known digit pair have - and therefore the 
+                // possible digit cannot be the same.
+                debug!("precalc common value: {}", precalc[row as usize][(digit1.possible_digits[i]) as usize]);
+                if common_count != precalc[row as usize][(digit1.possible_digits[i]) as usize]
+                {
+                    digit1.possible_digits.remove(i);
+                }
+                else {
+                    i += 1;
+                }
+            }
+        }
+
+        if digit1.possible_digits.len() == 1
+        {
+            debug!("digit1 is known.");
+            debug!("digit: {}", digit1.possible_digits[0]);
+            known.push(digit1);
+
+        }
+        else
+        {
+            debug!("Inserting back into unknown at position 0.");
+            unknown.insert(0, digit1);
+        }
     }
-    
+
+    // sort known back into order
+    known.sort_by_key(|f| f.position);
+    return known;
 }
 
 fn common_segment(digit1: &Digit, digit2: &Digit) -> i8
 {
-    let common = 0;
-    for i in 0..8
+    let mut common = 0;
+    for i in 0..7
     {
         if digit1.segments[i] == 1 && digit2.segments[i] == 1
         {
@@ -192,6 +278,8 @@ fn build_digits(digits: &String) -> Vec<Digit>
 {
     let mut built_digits = Vec::<Digit>::new();
 
+    let mut count: usize = 0;
+
     for half in digits.split("|")
     {
         debug!("Half: {}", half);
@@ -203,6 +291,8 @@ fn build_digits(digits: &String) -> Vec<Digit>
             {
                 debug!("Digit string is not empty.");
                 let mut digit = Digit::new();
+                digit.position = count;
+                count += 1;
                 for segment_str in digit_string.chars()
                 {
                     debug!("Setting digit segment for segment char: {}", segment_str);
@@ -221,13 +311,25 @@ fn build_digits(digits: &String) -> Vec<Digit>
 #[cfg(test)]
 pub mod tests
 {
-    use crate::{digit::digit::Digit, day::day8::size_analysis};
+    use crate::{digit::digit::Digit, day::day8::{size_analysis, common_segment}};
 
     use super::build_digits;
 
+    #[test]
     pub fn test_common_segments()
     {
-        
+        let mut digit1 = Digit::new();
+        let mut digit2 = Digit::new();
+
+        digit1.set_segment('a');
+        digit1.set_segment('b');
+        digit1.set_segment('d');
+
+        digit2.set_segment('a');
+        digit2.set_segment('d');
+        digit2.set_segment('f');
+
+        assert_eq!(common_segment(&digit1, &digit2), 2);
     }
 
     #[test]
