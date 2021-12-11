@@ -199,3 +199,21 @@ pub fn frequency_calculator_bitstring(binary: String, counter: &mut [i32])
         }
 
 }
+
+pub fn char_to_i8(char_digit: char) -> i8
+{
+    match char_digit
+    {
+        '0' => {0}
+        '1' => {1}
+        '2' => {2}
+        '3' => {3}
+        '4' => {4}
+        '5' => {5}
+        '6' => {6}
+        '7' => {7}
+        '8' => {8}
+        '9' => {9}
+        _ => {panic!("This character is not a number.")}
+    }
+}

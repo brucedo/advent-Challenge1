@@ -1,6 +1,6 @@
 use std::{io::BufReader, fs::File};
 
-use crate::common::common::{read_trimmed_line, get_reader};
+use crate::common::common::{read_trimmed_line, get_reader, char_to_i8};
 
 use log::{debug, error};
 
@@ -179,20 +179,3 @@ fn part_two(field: Vec<Vec<i8>>, low_points: Vec<(usize, usize)>)
     println!("Size multiplied is {}", first * second * third);
 }
 
-fn char_to_i8(char_digit: char) -> i8
-{
-    match char_digit
-    {
-        '0' => {0}
-        '1' => {1}
-        '2' => {2}
-        '3' => {3}
-        '4' => {4}
-        '5' => {5}
-        '6' => {6}
-        '7' => {7}
-        '8' => {8}
-        '9' => {9}
-        _ => {panic!("This character is not a number.")}
-    }
-}
