@@ -3,13 +3,15 @@ pub mod lines;
 pub mod common;
 pub mod day;
 pub mod digit;
+pub mod graph;
 
 use std::io::{Write, stdin};
 
 use day::{day2::challenge_day_two, day1::challenge_day_one, day3::challenge_day_three,
     day4::challenge_day_four,day5::challenge_day_five, day6::challenge_day_six};
 
-use crate::{day::{day7::challenge_day_7, day8::challenge_day_8, day9::challenge_day_9, day10::challenge_day_10, day11::challenge_day_11},};
+use crate::{day::{day7::challenge_day_7, day8::challenge_day_8, day9::challenge_day_9, 
+    day10::challenge_day_10, day11::challenge_day_11, day12::challenge_day_12},};
 
 fn main() 
 {
@@ -17,7 +19,7 @@ fn main()
 
     let mut choice = String::new();
 
-    print!("Which day's challenge to run (1-11): ");
+    print!("Which day's challenge to run (1-12): ");
     std::io::stdout().flush().unwrap();
     stdin().read_line(&mut choice).expect("Apparently you are bad at typing?  Somehow?");    
 
@@ -73,6 +75,10 @@ fn main()
         "11" =>
         {
             challenge_day_11();
+        }
+        "12" =>
+        {
+            challenge_day_12();
         }
         _ => {
             println!("Pick a real number next time.");
