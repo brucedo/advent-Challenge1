@@ -1,4 +1,4 @@
-use std::num;
+use std::{num, ops::{Index, IndexMut}};
 
 use log::{debug, trace};
 
@@ -8,6 +8,22 @@ pub struct Grid
     grid: Vec<Vec<i16>>,
 }
 
+impl Index<usize> for Grid {
+    type Output = Vec<i16>;
+    
+    fn index(&self, index: usize) -> &Vec<i16>
+    {
+        return &self.grid[index];
+    }  
+}
+
+impl IndexMut<usize> for Grid {
+
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        return self.grid[index].as_mut();
+    }
+}
+
 impl Grid
 {
     pub fn new() -> Grid
@@ -15,6 +31,44 @@ impl Grid
         Grid
         {
             grid: Vec::new()
+        }
+    }
+
+    pub fn fold_up(&mut self, y: usize)
+    {
+        // The fold mark is in index coordinates, not length coordinates
+        let count = self.grid.len() - 1 - y;
+        
+        // Remove the folded over row
+        self.grid.remove(y);
+        for row in 1..(count + 1)
+        {
+            let folded_row = y.checked_sub(row).unwrap();
+            for col in 0..self.grid[y].len()
+            {
+                self.grid[folded_row][col] += self.grid[y][col];
+            }
+            self.grid.remove(y);
+        }
+    }
+
+    pub fn fold_left(&mut self, x: usize)
+    {
+        let count = self.grid[x].len() - 1 - x;
+
+        for row in self.grid.iter_mut()
+        {
+            row.remove(x);
+        }
+
+        for col in 1..(count + 1)
+        {
+            let folded_col = x.checked_sub(col).unwrap();
+            for row in 0..self.grid.len()
+            {
+                self.grid[row][folded_col] += self.grid[row][x];
+                self.grid[row].remove(x);
+            }
         }
     }
 
@@ -130,10 +184,143 @@ mod tests
 {
     use super::Grid;
     use super::Line;
+    use log::{debug, trace};
 
     fn init()
     {
         let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    fn test_fold_up_simple()
+    {
+        init();
+        let mut test_grid = Grid::new();
+
+        test_grid.init(5, 5);
+
+        test_grid[0][0] = 1;
+        test_grid[4][0] = 1;
+        test_grid[0][4] = 1;
+        test_grid[4][4] = 1;
+
+        test_grid.fold_up(2);
+
+        assert_eq!(test_grid.get_height_at(0),5);
+        assert_eq!(test_grid.get_width(), 2);
+        assert_eq!(test_grid[0][0],2);
+        assert_eq!(test_grid[0][4],2);
+    }
+
+    #[test]
+    fn test_fold_up_off_centre()
+    {
+        init();
+        let mut test_grid = Grid::new();
+
+        test_grid.init(5, 5);
+
+        test_grid[0][0] = 1;
+        test_grid[4][0] = 1;
+        test_grid[0][4] = 1;
+        test_grid[4][4] = 1;
+
+        test_grid.fold_up(3);
+
+        assert_eq!(test_grid.get_height_at(0),5);
+        assert_eq!(test_grid.get_width(), 3);
+        assert_eq!(test_grid[0][0],1);
+        assert_eq!(test_grid[0][4],1);
+        assert_eq!(test_grid[2][0],1);
+        assert_eq!(test_grid[2][4],1);
+    }
+
+    #[test]
+    fn test_fold_left_simple()
+    {
+        init();
+        let mut test_grid = Grid::new();
+
+        test_grid.init(5, 5);
+
+        test_grid[0][0] = 1;
+        test_grid[4][0] = 1;
+        test_grid[0][4] = 1;
+        test_grid[4][4] = 1;
+
+        test_grid.fold_left(2);
+
+        assert_eq!(test_grid.get_height_at(0), 2);
+        assert_eq!(test_grid.get_width(), 5);
+        assert_eq!(test_grid[0][0], 2);
+        assert_eq!(test_grid[4][0], 2);
+    }
+
+    #[test]
+    fn test_fold_left_and_up()
+    {
+        init();
+        let mut test_grid = Grid::new();
+
+        test_grid.init(5, 5);
+
+        test_grid[0][0] = 1;
+        test_grid[4][0] = 1;
+        test_grid[0][4] = 1;
+        test_grid[4][4] = 1;
+
+        test_grid.fold_left(2);
+        test_grid.fold_up(2);
+
+        assert_eq!(test_grid[0][0], 4);
+        assert_eq!(test_grid[0][1], 0);
+        assert_eq!(test_grid[1][0], 0);
+        assert_eq!(test_grid[1][1], 0);
+    }
+
+    #[test]
+    fn test_fold_large()
+    {
+        init();
+        let mut test_grid = Grid::new();
+
+        test_grid.init(15, 11);
+        test_grid[10][6] = 1;
+        test_grid[14][0] = 1;
+        test_grid[10][9] = 1;
+        test_grid[3][0] = 1;
+        test_grid[4][10] = 1;
+        test_grid[11][4] = 1;
+        test_grid[0][6] = 1;
+        test_grid[12][6] = 1;
+        test_grid[1][4] = 1;
+        test_grid[13][0] = 1;
+        test_grid[12][10] = 1;
+        test_grid[4][3] = 1;
+        test_grid[0][3] = 1;
+        test_grid[4][8] = 1;
+        test_grid[10][1] = 1;
+        test_grid[14][2] = 1;
+        test_grid[10][8] = 1;
+        test_grid[0][9] = 1;
+
+        for row in 0..test_grid.get_width()
+        {
+            debug!("{:?}", test_grid[row]);
+        }
+
+        test_grid.fold_up(7);
+
+
+        for row in 0..test_grid.get_width()
+        {
+            debug!("{:?}", test_grid[row]);
+        }
+        assert_ne!(test_grid[0][0], 0);
+        assert_eq!(test_grid[0][1], 0);
+        assert_ne!(test_grid[0][2], 0);
+
+
     }
 
     #[test]
