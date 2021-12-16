@@ -4,7 +4,6 @@ use std::{io::BufReader, fs::File};
 use crate::common::common::{get_reader, read_trimmed_line};
 use crate::lines::grid::Grid;
 use log::debug;
-use log::error;
 
 pub fn challenge_day_13()
 {

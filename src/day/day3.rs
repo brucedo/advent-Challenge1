@@ -39,7 +39,7 @@ pub fn challenge_day_three()
         reader = get_reader();
     }
 
-    day_3_part_one(&mut reader, &frequency, row_count);
+    day_3_part_one(&frequency, row_count);
 
     // rewind for task two
     seek = reader.seek(SeekFrom::Start(0));
@@ -49,7 +49,7 @@ pub fn challenge_day_three()
         reader = get_reader();
     }
 
-    day_3_part_two(&mut reader);
+    let _ = day_3_part_two(&mut reader);
 }
 
 fn day_3_part_two(reader: &mut BufReader<File>) -> Result<String, String>
@@ -141,7 +141,7 @@ fn day_3_part_two(reader: &mut BufReader<File>) -> Result<String, String>
 
 }
 
-fn day_3_part_one(reader: &mut BufReader<File>, frequency: &[i32], row_count: i32)
+fn day_3_part_one(frequency: &[i32], row_count: i32)
 {
     
     let mut gamma:i32 = 0;

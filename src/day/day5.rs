@@ -1,4 +1,4 @@
-use std::{io::{SeekFrom, Seek, BufReader}, fs::File, cmp::max, convert::TryInto};
+use std::{io::{BufReader}, fs::File, cmp::max, convert::TryInto};
 
 use log::{error, debug};
 

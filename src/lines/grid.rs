@@ -1,4 +1,4 @@
-use std::{num, ops::{Index, IndexMut}};
+use std::{ops::{Index, IndexMut}};
 
 use log::{debug, trace};
 
@@ -184,7 +184,7 @@ mod tests
 {
     use super::Grid;
     use super::Line;
-    use log::{debug, trace};
+    use log::{debug};
 
     fn init()
     {

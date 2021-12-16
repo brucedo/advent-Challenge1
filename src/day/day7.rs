@@ -40,7 +40,7 @@ fn part_one<F>(reader: &mut BufReader<File>, calculator: F) where F: Fn(&i32)->i
 
     match result
     {
-        Ok(size) =>
+        Ok(_) =>
         {
             for number in buffer.split(",")
             {

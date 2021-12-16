@@ -1,4 +1,4 @@
-use std::{io::{SeekFrom, Seek, BufReader}, fs::File};
+use std::{io::{BufReader}, fs::File};
 
 use crate::{bingo::bingo::Bingo, common::common::{read_trimmed_line, get_reader}};
 
@@ -18,9 +18,10 @@ fn day_4_part_one(reader: &mut BufReader<File>)
     let mut current_board: usize = 0;
     let mut row: usize = 0;
     let mut col: usize = 0;
+    let mut read_line:Result<usize, String>;
 
     // Load the game state, starting with the string of numbers to call
-    let mut read_line= read_trimmed_line(reader, &mut call_string);
+    let _= read_trimmed_line(reader, &mut call_string);
 
     // now the boards
     loop

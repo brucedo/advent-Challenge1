@@ -1,4 +1,4 @@
-use std::{io::BufReader, fs::File, ops::Index,};
+use std::{io::BufReader, fs::File, };
 
 use log::{debug, error};
 
@@ -152,8 +152,7 @@ fn segment_analysis(display: &mut Vec<Digit>) -> Vec<Digit>
     // Now, iterate across all of the unknowns.  Check each Digit at display[unknown]
     // against all of the known indices.  Compare the common segment counts against the table
     // above.
-    let last_pass = unknown.len();
-    let curr_pass = std::usize::MAX;
+
     while !unknown.is_empty()
     {
         // if last_pass == curr_pass
