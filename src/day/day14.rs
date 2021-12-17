@@ -245,11 +245,11 @@ fn letter_analysis(polymer: Vec<char>)
     println!("The incredibly arbitrary metric for this challenge therefore is {}", max_frequency - min_frequency);
 }
 
-fn read_starting_compound(reader: &mut BufReader<File>) -> Vec<char>
+fn read_starting_compound(reader: &mut BufReader<File>) -> Vec<u8>
 {
     let mut buffer = String::new();
     let mut read_result = read_trimmed_line(reader, &mut buffer);
-    let mut starting_compound = Vec::<char>::new();
+    let mut starting_compound = Vec::<u8>::new();
 
     loop {
         match read_result
@@ -267,7 +267,7 @@ fn read_starting_compound(reader: &mut BufReader<File>) -> Vec<char>
                 // process String into vec of chars
                 for element in buffer.chars()
                 {
-                    starting_compound.push(element);
+                    starting_compound.push(element.to_ascii_uppercase() as u8);
                 }
                 buffer = String::new();
 
@@ -303,6 +303,7 @@ fn read_polymerization_rules(reader: &mut BufReader<File>) -> HashMap<String, ch
 
                 let mut rule_iter = buffer.split(" -> ");
                 let (start, inject) = (rule_iter.next().unwrap().to_string(), rule_iter.next().unwrap().chars().next().unwrap());
+                // 
                 debug!("start pair: {}\ninjected: {}", start, inject);
                 polymerization_rules.insert(start, inject);
 
