@@ -11,7 +11,9 @@ use day::{day2::challenge_day_two, day1::challenge_day_one, day3::challenge_day_
     day4::challenge_day_four,day5::challenge_day_five, day6::challenge_day_six};
 
 use crate::{day::{day7::challenge_day_7, day8::challenge_day_8, day9::challenge_day_9, 
-    day10::challenge_day_10, day11::challenge_day_11, day12::challenge_day_12, day13::challenge_day_13, day14::challenge_day_14, day15::challenge_day_15, day16::challenge_day_16, day17::challenge_day_17},};
+    day10::challenge_day_10, day11::challenge_day_11, day12::challenge_day_12, day13::challenge_day_13, 
+    day14::challenge_day_14, day15::challenge_day_15, day16::challenge_day_16, day17::challenge_day_17, 
+    day18::challenge_day_18},};
 
 fn main() 
 {
@@ -19,7 +21,7 @@ fn main()
 
     let mut choice = String::new();
 
-    print!("Which day's challenge to run (1-17): ");
+    print!("Which day's challenge to run (1-18): ");
     std::io::stdout().flush().unwrap();
     stdin().read_line(&mut choice).expect("Apparently you are bad at typing?  Somehow?");    
 
@@ -99,6 +101,10 @@ fn main()
         "17" =>
         {
             challenge_day_17();
+        }
+        "18" =>
+        {
+            challenge_day_18()
         }
         _ => {
             println!("Pick a real number next time.");
